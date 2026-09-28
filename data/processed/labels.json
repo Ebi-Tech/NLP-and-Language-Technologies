@@ -1,0 +1,7 @@
+{
+  "economic_violence": 0,
+  "emotional_violence": 1,
+  "harmful_traditional_practice": 2,
+  "physical_violence": 3,
+  "sexual_violence": 4
+}
