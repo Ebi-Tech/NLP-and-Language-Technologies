@@ -45,4 +45,4 @@ Several files in this repo are shared infrastructure, not something to regenerat
 
 ## Branch Workflow
 
-Part 1, covering baselines and EDA, gets pushed straight to `main` since it's the foundation everything else depends on. Parts 2 through 4 each work on their own branch off `main` and get reviewed before merging in.
+Part 1, covering baselines and EDA, gets pushed straight to `main` since it's the foundation everything else depends on. Parts 2 through 4 each work on their own branch off `main` and merging in.
