@@ -4,3 +4,6 @@ scikit-learn
 matplotlib
 seaborn
 nltk
+
+# Neural models (BiLSTM, TextCNN). Google Colab already ships TensorFlow: do not reinstall it there.
+tensorflow>=2.16

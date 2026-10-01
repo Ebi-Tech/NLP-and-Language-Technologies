@@ -1,0 +1,31 @@
+# Decision Log
+
+One row per decision that affects more than one person. **Status** is one of:
+`Agreed` (already in the repo and in use), `Proposed` (written down by the repo owner,
+needs a yes/no from the people in "Affects"), or `Open` (nobody has decided).
+Add a row when you make a call that someone else has to live with.
+
+| # | Decision | Made by | Affects | Why | Status |
+|---|---|---|---|---|---|
+| 1 | Fixed stratified 70/15/15 split, seed 42, in `splits/train_val_test_split.csv` | Jean | All | Smallest class has 188 tweets; an unstratified split could leave a handful in val/test | Agreed |
+| 2 | One fixed split instead of k-fold | Jean | All | Four people, three frameworks, and fine-tuning the transformer k times is too slow | Agreed |
+| 3 | Label encoding alphabetical 0 to 4 (`data/processed/labels.json`) | Jean | All | One shared mapping | Agreed |
+| 4 | Light cleaning only: lowercase, smart quotes, whitespace; emoji kept | Jean | Parts 2, 3 | EDA found almost no hashtags/URLs; emoji may carry signal | Agreed |
+| 5 | Imbalance handled with scikit-learn `balanced` class weights in the neural models | Divine; Ajak follows | Parts 2, 3, 4 | Majority baseline reaches 82% accuracy but 0.18 macro-F1 | Agreed for Parts 2, 3. Kevin to confirm for DistilBERT |
+| 6 | Exact-text duplicates cross the split (113 train/val, 104 train/test, 29 val/test). The split is not regenerated. Models are also scored on the *clean* subset (tweets whose exact text is not in train) | Divine found it; policy by Ajak | All | Regenerating the split would invalidate finished results | Proposed |
+| 7 | Neural input pipeline: Keras `Tokenizer`, 20,000 words, `<OOV>`, max length 70, post-pad/truncate, vocab fitted on train only. TextCNN reuses it through `src/neural_data.py` | Divine; copied by Ajak | Parts 2, 3 | Identical inputs so architecture is the only difference | Agreed |
+| 8 | Tokenization is word-level, although the Part 1 report argued for subword tokenization | Divine | Report | Needs one sentence in the report explaining why; DistilBERT is the only subword model | Open |
+| 9 | Embeddings: random initialisation, 128-d, learned from scratch, for BiLSTM and TextCNN. Pretrained vectors are not tested | Divine; Ajak follows | Parts 2, 3 | Same for both models, so the comparison isolates the architecture | Proposed. Decide whether a pretrained-embedding run is worth adding |
+| 10 | Headline metric: macro-F1 on the clean test subset. Also reported: full-test macro-F1, accuracy (the leaderboard metric), per-class F1, confusion matrix, one-vs-rest ROC | Divine (metric justification); Ajak (clean subset as headline) | All | Accuracy cannot separate the models (all about 99.7%) | Proposed |
+| 11 | Selection rule: highest mean validation macro-F1 over several seeds; configurations within 0.005 are tied and the one with fewer parameters wins | Ajak | Parts 2, 3, 4 | Rare classes have 28 to 33 validation tweets, so one tweet moves their F1 by about 0.03 | Proposed |
+| 12 | The test set is used once, after all tuning is finished | Whole group | All | Standard protocol | Agreed |
+| 13 | BiLSTM 32 vs 64 units was chosen on one run by a 0.003 macro-F1 gap, and the BiLSTM notebook sets no random seed | Divine | Report | Inside the noise for a 28-example class; report it as a close call | Open (say so in Results) |
+| 14 | **Result files are per model, never one shared file edited from several branches.** Each model saves `reports/results/<model>_test.json` (via `save_metrics`), `preds_<model>_test.csv` (via `src/save_preds.py`), its own experiment log and its own comparison row. Part 4 builds `model_comparison.csv` from them | Ajak | Divine, Kevin, Jean | Two branches appending to the same CSV produce a merge conflict every time | Proposed |
+| 15 | **All result files live in `reports/results/`.** The BiLSTM notebook and `src/save_preds.py` write to a top-level `results/` folder in the Colab clone, but the committed files are in `reports/results/`. TextCNN code points `save_preds` there | Ajak | Divine, Kevin | One location; `metrics.py` already writes there | Proposed. Divine's notebook needs the same path |
+| 16 | The clean-subset score of a model is saved under the model name plus `_clean` (for example `textcnn_clean_test.json`) | Ajak | Kevin | `save_metrics` makes one file per model name; Kevin's table builder should treat a `_clean` suffix as the same model's clean-subset score, not a sixth model | Proposed |
+| 17 | Every tuning run is logged in `reports/results/experiments_<model>.csv` with `src/experiment_log.py` (what changed, hypothesis, result, decision) | Ajak | All | The rubric gives 12 of 50 points to experiment progression and tracking | Proposed |
+| 18 | Notebook names: `03_bidirectional-lstm` (exists), `04_textcnn`, `05_transformer`, `06_model_comparison` | Ajak | Kevin | One numbering scheme | Proposed |
+| 19 | Stress tests in `src/robustness.py` (keyword masking, word shuffling) are run for every model | Ajak | All | Tests the "without keywords" framing directly | Proposed |
+| 20 | `requirements.txt` gets `tensorflow>=2.16` appended. Colab already ships TensorFlow, so it is not reinstalled there | Ajak | All | Pinning TensorFlow on Colab breaks the preinstalled runtime. This is the one shared file Ajak edits, so a trivial merge conflict is possible: keep both sets of lines | Proposed |
+| 21 | The assignment says "five approaches" in one place and "three selected approaches" in the final-submission section | Whole group | Report, video | Ask the instructor once, in writing. Until then every model stays in the report | Open |
+| 22 | TextCNN trains for up to 15 epochs, the same cap as the BiLSTM, because the BiLSTM never early-stopped inside 15 epochs | Ajak | Part 2 | A lower cap could stop the TextCNN before it converges and bias the comparison | Proposed |
