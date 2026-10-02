@@ -4,7 +4,7 @@
 
 ### 4.1 Overview
 
-All five approaches are trained and scored on the same fixed split and compared with the same metric code, so that differences in results can be attributed to the model rather than to the data handling. The study compares one classical baseline that ignores word order (TF-IDF with logistic regression) against three neural architectures that model word order in different ways: a bidirectional LSTM (whole-sequence recurrence), a TextCNN (local windows of words), and a fine-tuned DistilBERT (self-attention over the whole sequence), with a majority-class classifier as a floor. The data come from the Zindi Gender-Based Violence Tweet Classification Challenge, released under a CC-BY 1.0 license [11].
+All five approaches are trained and scored on the same fixed split and compared with the same metric code, so that differences in results can be attributed to the model rather than to the data handling. The study compares one classical baseline that ignores word order (TF-IDF with logistic regression) against three neural architectures that handle word order in different ways: a bidirectional LSTM (whole-sequence recurrence), a TextCNN (local windows of words; the selected width-1 configuration uses no word order, see 4.4), and a fine-tuned DistilBERT (self-attention over the whole sequence), with a majority-class classifier as a floor. The data come from the Zindi Gender-Based Violence Tweet Classification Challenge, released under a CC-BY 1.0 license [11].
 
 ### 4.2 Data preparation shared by every model
 
@@ -14,7 +14,7 @@ All five approaches are trained and scored on the same fixed split and compared 
 
 **Duplicates and the clean test subset.** Exact-text duplicates cross the split: 113 distinct texts appear in both train and validation, 104 in both train and test, and 29 in both validation and test. Regenerating the split would have invalidated results already produced, so the split was kept. Instead every model is scored twice on the test set: on all 5,948 tweets, and on the 5,831 tweets whose exact text does not appear in the training set (the *clean* subset). The clean subset is the headline result.
 
-**Class imbalance.** The classes are severely imbalanced (`sexual_violence` 82.3%, `physical_violence` 15.0%, the other three together 2.7%). The BiLSTM is trained with scikit-learn's `balanced` class weights [9] (for example 42.1 for `harmful_traditional_practice` and 0.24 for `sexual_violence`), passed to the loss during training. The TextCNN and DistilBERT were each trained with and without these weights, and in both cases the unweighted model was kept (for the TextCNN this is Stage C below). The BiLSTM and the other two neural models therefore differ in loss weighting as well as in architecture, and the Results section states this when comparing them. **[CONFIRM with Kevin: the DistilBERT choice was made on validation data, not test data.]**
+**Class imbalance.** The classes are severely imbalanced (`sexual_violence` 82.3%, `physical_violence` 15.0%, the other three together 2.7%). The BiLSTM is trained with scikit-learn's `balanced` class weights [9] (for example 42.1 for `harmful_traditional_practice` and 0.24 for `sexual_violence`), passed to the loss during training. The TextCNN and DistilBERT were each trained with and without these weights, and in both cases the unweighted model was kept (for the TextCNN this is Stage C below, which tested weighting only on the width-1, 50-filter configuration and so does not generalise to other kernel sets). The BiLSTM and the other two neural models therefore differ in loss weighting as well as in architecture, and the Results section states this when comparing them. The DistilBERT choice was made on validation macro-F1 (notebook Step 7), before the test set was used.
 
 ### 4.3 Sequence representation
 
@@ -22,7 +22,7 @@ All five approaches are trained and scored on the same fixed split and compared 
 
 **TF-IDF model.** Unigram and bigram TF-IDF features (20,000 features) feed a class-balanced logistic regression. It has no access to the order of words beyond two-word windows.
 
-**DistilBERT.** The Hugging Face tokenizer for `distilbert-base-uncased`, with sequences padded or truncated to 128 subword tokens. **[CONFIRM with Kevin: whether any cleaning beyond the shared `clean_text` function was applied.]**
+**DistilBERT.** The Hugging Face tokenizer for `distilbert-base-uncased`, with sequences padded or truncated to 128 subword tokens. It does not use the shared `clean_text` output: it takes the raw `tweet` text with URLs and @handles removed, and the tokenizer lowercases it.
 
 ### 4.4 The three neural approaches and why they differ
 
@@ -58,15 +58,13 @@ Macro-averaged F1 is the primary metric, because it gives each class equal weigh
 
 Python with TensorFlow/Keras [10] (BiLSTM, TextCNN), scikit-learn [9] (TF-IDF, metrics, class weights), and Hugging Face Transformers with PyTorch (DistilBERT). Library versions are printed at the top of each notebook: TensorFlow 2.20.0, scikit-learn 1.6.1, pandas 2.2.3, NumPy 2.1.3. Hardware: Tesla T4 GPU on Google Colab. The code is at https://github.com/Ebi-Tech/NLP-and-Language-Technologies and every notebook starts from the same setup cell. The TextCNN uses fixed seeds (0, 1, 2) and is reported as mean and standard deviation across them, because GPU operations can be non-deterministic. The BiLSTM sets no seed and DistilBERT is a single run (seed 42).
 
-### 4.8 AI-use disclosure (draft: edit so that it is true)
+### 4.8 AI-use disclosure
 
 AI assistance (Claude, Anthropic) was used for:
 
 Planning the repository structure
 
 Drafting shared helper modules in src/
-
-Adding download and push cells to the TextCNN notebook.
 
 The group reviewed all outputs, re‑ran training on Google Colab, and is responsible for the final work. Each member should state clearly what they personally wrote and executed.
 

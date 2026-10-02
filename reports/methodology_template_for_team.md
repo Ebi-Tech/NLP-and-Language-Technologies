@@ -1,6 +1,6 @@
 # Methodology input template (one per model owner)
 
-Send this to Divine, Kevin and Jean. I need it filled in by {date} to write section 4 (Methodology) of the report. Keep each field to 2 to 5 lines. Use numbers, not adjectives. Anything you cannot fill in, write "not done".
+Send this to Divine, Kevin and Jean. I need it filled in to write section 4 (Methodology) of the report. Keep each field to 2 to 5 lines. Use numbers, not adjectives. Anything you cannot fill in, write "not done".
 
 **Your name and model:**
 
@@ -39,7 +39,7 @@ Send this to Divine, Kevin and Jean. I need it filled in by {date} to write sect
 
 **2. Architecture.** Embedding, then parallel Conv1D layers with widths {W} and {N} filters each (ReLU), global max-pool per branch, concatenate, dropout 0.5, softmax over 5 classes. Captures local word patterns anywhere in the tweet; cannot use context beyond its widest window.
 
-**3. Training.** Adam, lr 1e-3, batch 64, up to 15 epochs, balanced class weights, early stopping on validation loss with patience 3 and best weights restored, dropout 0.5.
+**3. Training.** Adam, lr 1e-3, batch 64, up to 15 epochs, class weights as chosen in Stage C (final TextCNN: none), early stopping on validation loss with patience 3 and best weights restored, dropout 0.5.
 
 **4. Tuning.** Stage A kernel widths ({1}, {2}, {3,4,5}, {3,4,5,6,7}), Stage B filters (50/100/200), Stage C class weights on/off. 3 seeds each. Rows A1 to C1 in `reports/results/experiments_<model>.csv`.
 
