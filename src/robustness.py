@@ -66,3 +66,34 @@ def shuffle_words(texts, seed: int = 0) -> list:
         rng.shuffle(words)
         shuffled.append(" ".join(words))
     return shuffled
+
+
+def count_masked(texts, keywords) -> list:
+    """How many words keyword masking replaces in each text."""
+    wanted = set(keywords)
+    return [sum(1 for w in _WORD.findall(t) if w in wanted) for t in texts]
+
+
+def mask_random(texts, counts, seed: int = 0) -> list:
+    """Mask the same number of randomly chosen content words per text.
+
+    This is the control for mask_keywords. Masking 50 words might break a model
+    simply because the text is damaged, not because those particular words
+    carried the class. Masking the same count of random content words separates
+    the two: if the random version hurts just as much, the keyword result says
+    nothing about keywords.
+    """
+    rng = random.Random(seed)
+    out = []
+    for text, k in zip(texts, counts):
+        words = _WORD.findall(text)
+        content = [i for i, w in enumerate(words) if w not in ENGLISH_STOP_WORDS]
+        chosen = set(rng.sample(content, min(k, len(content))))
+        seen = [-1]
+
+        def replace(match):
+            seen[0] += 1
+            return PLACEHOLDER if seen[0] in chosen else match.group(0)
+
+        out.append(_WORD.sub(replace, text))
+    return out
