@@ -1,0 +1,4 @@
+test variant,TextCNN macro-F1,TextCNN acc,TextCNN macro-F1 (clean),TF-IDF+LogReg macro-F1,TF-IDF+LogReg acc,TF-IDF+LogReg macro-F1 (clean)
+original,0.9978,0.9995,0.9977,0.9815,0.9971,0.981
+keywords masked,0.3999,0.8875,0.3934,0.2259,0.8297,0.2117
+words shuffled,0.9978,0.9995,0.9977,0.9811,0.997,0.9805
