@@ -14,7 +14,7 @@ import pandas as pd
 
 from src.data_prep import ID_TO_LABEL
 
-RESULTS_DIR = Path("results")
+RESULTS_DIR = Path("reports/results")
 LABEL_ORDER = [ID_TO_LABEL[i] for i in range(len(ID_TO_LABEL))]
 
 
