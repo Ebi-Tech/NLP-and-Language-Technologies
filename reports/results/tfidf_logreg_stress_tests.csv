@@ -1,0 +1,5 @@
+test variant,macro_f1,accuracy,macro_f1_clean
+original,0.9813,0.997,0.9808
+masked,0.2485,0.8302,0.2365
+random_masked,0.9351,0.9783,0.9354
+shuffled,0.9777,0.9968,0.9771
