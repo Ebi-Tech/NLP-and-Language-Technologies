@@ -1,0 +1,9 @@
+{
+  "model": "TF-IDF + Logistic Regression",
+  "config": "class weights",
+  "val_macro_f1": {
+    "balanced": 0.984097510821156,
+    "none": 0.9000445720190339
+  },
+  "chosen_on": "validation macro F1"
+}

@@ -20,6 +20,9 @@ src/
   data_prep.py                  cleaning + label encoding (shared, import this)
   metrics.py                    shared evaluation functions (shared, import this)
   baselines.py                  majority-class + TF-IDF/LogReg baselines
+  leakage.py                    cross-split duplicate check and leak-free subsets (shared)
+  save_preds.py                 saves per-tweet class probabilities in the shared format
+  robustness.py                 keyword-masking and word-shuffling stress tests
 notebooks/
   01_exploratory_data_analysis.ipynb   exploratory data analysis, fully annotated
   02_baseline_models.ipynb             baseline model training and evaluation
@@ -41,7 +44,7 @@ pip install -r requirements.txt
 
 ## Shared Artifacts
 
-Several files in this repo are shared infrastructure, not something to regenerate on your own branch. `splits/train_val_test_split.csv` holds the fixed stratified train, validation, and test split that all five models train and evaluate against, so results stay comparable across parts. `src/data_prep.py` handles text cleaning and label encoding the same way for everyone. `src/metrics.py` computes the evaluation metrics used to score every model and saves them to `reports/results/` in one consistent JSON format, so nobody ends up scoring their own model differently from the rest, and the five-model comparison in the Results stage can be built by reading those files directly rather than re-collecting numbers from each person.
+Several files in this repo are shared infrastructure, not something to regenerate on your own branch. `splits/train_val_test_split.csv` holds the fixed stratified train, validation, and test split that all five models train and evaluate against, so results stay comparable across parts. `src/data_prep.py` handles text cleaning and label encoding the same way for everyone. `src/metrics.py` computes the evaluation metrics used to score every model and saves them to `reports/results/` in one consistent JSON format, so nobody ends up scoring their own model differently from the rest, and the five-model comparison in the Results stage can be built by reading those files directly rather than re-collecting numbers from each person. `src/leakage.py` defines the leak-free subset of each split (rows with no cleaned-text copy in train), so the duplicate check is run the same way for every model, and `src/save_preds.py` saves each model's per-tweet class probabilities on the test split in one shared format, which the five-model comparison reads.
 
 ## Branch Workflow
 
