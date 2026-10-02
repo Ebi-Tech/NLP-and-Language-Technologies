@@ -1,0 +1,11 @@
+{
+  "model": "DistilBERT",
+  "base_model": "distilbert-base-uncased",
+  "config": "no class weights",
+  "epochs": 3,
+  "lr": 2e-05,
+  "max_len": 128,
+  "batch_size": 32,
+  "hardware": "Tesla T4",
+  "training_time_min": 16.7
+}
