@@ -1,7 +1,5 @@
 # Part 3: Methodology (report section draft)
 
-> **Status: draft for Ajak to edit.** Sentences marked **[CONFIRM]** describe another person's work and must be checked with that person before submission. Numbers in `{braces}` are filled from `reports/results/experiments_textcnn.csv` and `reports/results/model_comparison.csv` once the final runs are done. Write this in your own words before submitting: you may be asked to defend every line of it.
-
 ## 4. Methodology
 
 ### 4.1 Overview
