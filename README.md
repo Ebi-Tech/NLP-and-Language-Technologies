@@ -6,11 +6,13 @@ This is a group project comparing five sequential and classical modelling approa
 
 **Content warning.** The dataset contains real, first-person descriptions of gender-based violence, including graphic descriptions of sexual abuse. Read with that in mind before opening the raw data files.
 
-**Data attribution.** The dataset is provided by Zindi. Check the licence terms on the competition page before redistributing the data. Source: [Gender-Based Violence Tweet Classification Challenge, Zindi](https://zindi.africa/competitions/gender-based-violence-tweet-classification-challenge).
+**Data attribution.** The dataset is provided by Zindi under a CC-BY 1.0 license, which permits this kind of research and educational use and redistribution. Source: [Gender-Based Violence Tweet Classification Challenge, Zindi](https://zindi.africa/competitions/gender-based-violence-tweet-classification-challenge).
 
 ## Repo Structure
 
 ```text
+DECISIONS.md                    running decision log, one row per decision that affects more than one person
+requirements.txt                Python packages for the notebooks (see Setup)
 data/
   raw/                          original Train.csv / Test.csv (do not edit)
   processed/                    cleaned data produced by src/data_prep.py
@@ -31,9 +33,13 @@ notebooks/
   02_baseline_models.ipynb             baseline model training and evaluation
   03_bidirectional-lstm.ipynb          Part 2: BiLSTM
   04_textcnn.ipynb                     Part 3: TextCNN
+  04_distilbert.ipynb                  Part 4: DistilBERT
+  comparison.ipynb                     Part 4: cross-model comparison, reads reports/results/preds_*_test.csv
 reports/
   part1_data_understanding_and_preprocessing.md   written report section for Part 1
+  Bidirectional_LSTM.md          written report section for Part 2 (BiLSTM)
   part3_methodology.md           draft of the Methodology section (Part 3)
+  methodology_template_for_team.md   template sent to each model owner for the Methodology section
   figures/                       all chart and confusion matrix images
   results/                       every result file, one set per model (see Conventions below)
 reference/
@@ -48,7 +54,16 @@ The `reference/` folder holds background material from the competition organizer
 pip install -r requirements.txt
 ```
 
+`requirements.txt` covers the data, baseline, BiLSTM and TextCNN notebooks. `04_distilbert.ipynb` installs `transformers` in its own first cell (PyTorch comes with Colab), so it is not listed there.
+
 **Google Colab.** Open a notebook from `notebooks/` in Colab and, for the neural models, choose Runtime, then Change runtime type, then a GPU. The first cell clones this repository, moves into it and adds it to the import path, so the notebook runs from a fresh runtime. TensorFlow is already installed on Colab and is not reinstalled. Run notebooks from the repository root, because `src/` imports use paths relative to it.
+
+## Reproducing Part 3 (TextCNN)
+
+1. Open `notebooks/04_textcnn.ipynb` in Colab and choose Runtime, then Change runtime type, then a GPU (the saved run used a Tesla T4).
+2. Run the cells in order. Training is 7 configurations with 3 seeds each (18 to 43 seconds per run on a T4), followed by one test evaluation and the stress tests.
+3. Every output file starts with `textcnn` (or is `experiments_textcnn.csv`, `confusion_matrix_textcnn.png`) and is written to `reports/results/` or `reports/figures/`.
+4. Step 11 of the notebook zips those files for download. Step 12 pushes them to the branch, using a GitHub token stored in Colab Secrets as `GITHUB_TOKEN`. Never paste the token into a cell.
 
 ## Shared Artifacts
 
@@ -65,9 +80,11 @@ Several files in this repo are shared infrastructure, not something to regenerat
    - `preds_<model>_test.csv` with `src/save_preds.save_preds`
    - `experiments_<model>.csv` with `src/experiment_log.log_experiment`
    - `<model>_comparison_row.csv` with `src/results_table.make_comparison_row`
+   - `<model>_masked_test.json` and `<model>_shuffled_test.json` from the stress tests in `src/robustness.py` (full test set, shuffle seed 42)
 
    The combined `model_comparison.csv` is built from these by Part 4.
 6. **Record decisions** in `DECISIONS.md`.
+7. **Read each stress test against the architecture.** Shuffling cannot change the output of a model that ignores word order by construction (for example the final TextCNN with width-1 kernels, `DECISIONS.md` #25), so that result says nothing about the dataset.
 
 ## Branch Workflow
 
