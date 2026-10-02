@@ -10,9 +10,9 @@ This is fundamentally a sequential modelling problem: the meaning of a tweet dep
 
 ## Dataset Overview
 
-The dataset is provided by Zindi and consists of `Train.csv` (39,650 labeled tweets), `Test.csv` (15,581 unlabeled tweets used only for the leaderboard submission), and `SampleSubmission.csv` (the required submission format). The full exploratory analysis behind this section is in `notebooks/01_exploratory_data_analysis.ipynb`, which is annotated so that every result is explained in place; this document summarizes the findings and states their consequences for preprocessing and modelling.
+The dataset is provided by Zindi [1] and consists of `Train.csv` (39,650 labeled tweets), `Test.csv` (15,581 unlabeled tweets used only for the leaderboard submission), and `SampleSubmission.csv` (the required submission format). The full exploratory analysis behind this section is in `notebooks/01_exploratory_data_analysis.ipynb`, which is annotated so that every result is explained in place; this document summarizes the findings and states their consequences for preprocessing and modelling.
 
-The organizers' own starter notebook (kept for reference in `reference/StarterNotebook.ipynb`) states that the Zindi leaderboard metric is accuracy, and simultaneously demonstrates why that is a weak signal on its own: a simple Naive Bayes baseline reached 88% accuracy while predicting only 3 of the 5 categories, never once predicting the two rarest classes. This is confirmed and quantified in our own analysis below, and it directly shapes the evaluation strategy for the whole project (see the separate Evaluation Metrics section of the final report), where accuracy is reported because it is the actual leaderboard metric, but macro-F1 and per-class recall are used as the primary basis for comparing models.
+The organizers' own starter notebook (kept for reference in `reference/StarterNotebook.ipynb`) states that the Zindi leaderboard metric is accuracy, and simultaneously demonstrates why that is a weak signal on its own: a simple Naive Bayes baseline reached 88% accuracy while predicting only 3 of the 5 categories, never once predicting the two rarest classes. This is confirmed and quantified in our own analysis below, and it directly shapes the evaluation strategy for the whole project (see the separate Evaluation Metrics section of the final report), where accuracy is reported because it is the actual leaderboard metric, but macro-F1 and per-class recall are used as the primary basis for comparing models, because accuracy is dominated by the majority class [2], while macro-averaging gives every class equal weight. Measures also differ in how they respond to changes in the label distribution [3].
 
 ## Key Findings and Their Implications
 
@@ -20,7 +20,7 @@ The organizers' own starter notebook (kept for reference in `reference/StarterNo
 
 The five classes are not evenly represented: `sexual_violence` accounts for 82.34% of the data, `physical_violence` for 15.00%, and the remaining three classes together for only 2.66%, with the two smallest, `economic_violence` and `harmful_traditional_practice`, at 217 and 188 examples respectively (see `reports/figures/class_distribution.png`). This is the single most consequential property of the dataset for this project. It means:
 
-Accuracy alone cannot be trusted to reflect model quality, since a model can score well above 80% while ignoring three of the five classes entirely, exactly as the organizers' own baseline demonstrates.
+Accuracy alone cannot be trusted to reflect model quality, since a model can score well above 80% while ignoring three of the five classes entirely, exactly as the organizers' own baseline demonstrates. This is a well-documented weakness of accuracy on imbalanced data [2].
 
 The train/validation/test split cannot be a naive random split. We used a fixed stratified 70/15/15 split (built in `src/data_prep.py` and shared as `splits/train_val_test_split.csv`), which keeps class proportions consistent across all three subsets down to the smallest class, verified directly rather than assumed. Without stratification, a random split could plausibly leave the validation or test set with only a handful of `harmful_traditional_practice` examples, making per-class metrics for that class meaningless by chance alone.
 
@@ -62,7 +62,7 @@ Tokenization was left to each architecture. The EDA narrowed one choice: a maxim
 
 ## Baseline Results
 
-Two baselines were trained on the shared split to anchor the rest of the comparison: a majority-class classifier and a TF-IDF plus Logistic Regression model with balanced class weights. That choice was tested directly on validation: without class weights, macro F1 falls from 0.9841 to 0.9000 and validation errors rise from 18 to 56, almost all on the rare classes (recall of only 0.607 on `harmful_traditional_practice`), so the weights are kept for this model. The effect of class weights is specific to each model and is tested separately for the others. Both are implemented in `src/baselines.py`, fully reproduced with explanations in `notebooks/02_baseline_models.ipynb`, and scored with the shared metrics code in `src/metrics.py`.
+Two baselines were trained on the shared split to anchor the rest of the comparison: a majority-class classifier and a TF-IDF [4] plus Logistic Regression model with balanced class weights, both built with scikit-learn [5]. That choice was tested directly on validation: without class weights, macro F1 falls from 0.9841 to 0.9000 and validation errors rise from 18 to 56, almost all on the rare classes (recall of only 0.607 on `harmful_traditional_practice`), so the weights are kept for this model. The effect of class weights is specific to each model and is tested separately for the others. Both are implemented in `src/baselines.py`, fully reproduced with explanations in `notebooks/02_baseline_models.ipynb`, and scored with the shared metrics code in `src/metrics.py`.
 
 The majority-class baseline reaches 82.34% accuracy and a macro F1 of only 0.1806, since it always predicts `sexual_violence` and scores exactly zero precision, recall, and F1 on every other class. This is the numerical confirmation of the imbalance argument above: an 82% accurate model here has learned nothing at all about four of the five categories.
 
@@ -74,6 +74,28 @@ With the class-weight choice fixed on validation, the test split was scored once
 
 A stress test makes the keyword dependence measurable instead of leaving it inferred from feature weights alone (`notebooks/02_baseline_models.ipynb`, using `src/robustness.py`). Replacing the ten strongest content-word features per class, taken from the training split only, with a placeholder alters 99.8% of the test tweets, about 2.2 words each, and drops the baseline from a macro F1 of 0.9813 to 0.2485, close to the majority-class floor: of the 1,050 test tweets that are not `sexual_violence`, 1,008 are assigned to it. Masking the same number of randomly chosen content words instead leaves a macro F1 of 0.9351, so the collapse comes from losing those specific words and not from damaging the text. Shuffling the word order within each tweet costs only 0.0036 (macro F1 0.9777), as expected for a model that sees single words and adjacent pairs. The other models are tested with the same protocol, with this baseline as the reference, and its results are saved in `reports/results/tfidf_logreg_stress_tests.csv`.
 
+## Limits of the Evaluation
+
+Every score in this project comes from one fixed split, with the test set scored once, so the numbers have limits that should be read alongside them.
+
+The first limit is size. The two smallest classes have 28 to 33 tweets in validation and 28 to 32 in test. A single misclassified tweet in a class of 28 lowers that class's F1 from 1.000 to about 0.982, which moves macro F1 by about 0.004. Macro-averaging gives a 28-tweet class the same weight as the 4,898-tweet `sexual_violence` class, which is why it is used here, but it also makes the score most volatile exactly where the data is thinnest. Accuracy is kept because it is the leaderboard metric, but the majority class dominates it [2]. Because measures differ in how they respond to changes in the label distribution [3], every score in this project is read next to the per-class results.
+
+The second limit is saturation. Every trained model reaches an accuracy above 0.996, and the two strongest make only 3 and 4 errors on the 5,948 test tweets. Differences of that size are inside the seed-to-seed variation measured for the TextCNN, whose standard deviation in validation macro F1 across three seeds is between 0.003 and 0.010 depending on the configuration. No confidence intervals or significance tests were computed, so the ranking among the strongest models should not be read as established.
+
+The third limit is what the score measures. The duplicate check shows that leakage between splits changes macro F1 by less than 0.001, but the keyword stress tests show that a high score largely reflects how separable the classes are by a narrow vocabulary, not language understanding. Those tests use one placeholder scheme, about 50 masked words, one random-masking draw and one shuffle seed, so they indicate the dependence without fully characterizing it. The labels all come from the same organizer-labeled `Train.csv`, because `Test.csv` is unlabeled, so there is no external dataset to check how the scores carry over to new data.
+
 ## What This Means Going Into Model Selection
 
 Four properties of this dataset should carry the most weight in choosing and justifying the five modelling approaches. The severity and shape of the class imbalance makes imbalance-handling an explicit, comparable design decision across models rather than an implementation detail. The long-form nature of the text favors architectures and literature suited to longer documents over short-text-specific approaches. The confirmed keyword-driven shortcut, demonstrated directly by the TF-IDF baseline's own feature weights rather than assumed from the challenge brief alone, sets a genuinely strong classical baseline and reframes the comparison: the value of the neural models is not simply outscoring this baseline, but showing whether they generalize beyond the same narrow vocabulary it relies on. Finally, the class-specific difference in tweet length, particularly `physical_violence` being systematically shorter, is a confound to check for explicitly during error analysis, so that apparent model strength or weakness on that class is not mistaken for something it is not.
+
+## References
+
+[1] Zindi, "Gender-Based Violence Tweet Classification Challenge," 2021. Accessed: Oct. 2, 2026. [Online]. Available: https://zindi.world/competitions/gender-based-violence-tweet-classification-challenge
+
+[2] H. He and E. A. Garcia, "Learning from imbalanced data," *IEEE Trans. Knowl. Data Eng.*, vol. 21, no. 9, pp. 1263-1284, Sep. 2009.
+
+[3] M. Sokolova and G. Lapalme, "A systematic analysis of performance measures for classification tasks," *Inf. Process. Manag.*, vol. 45, no. 4, pp. 427-437, 2009, doi: 10.1016/j.ipm.2009.03.002.
+
+[4] G. Salton and C. Buckley, "Term-weighting approaches in automatic text retrieval," *Inf. Process. Manag.*, vol. 24, no. 5, pp. 513-523, 1988, doi: 10.1016/0306-4573(88)90021-0.
+
+[5] F. Pedregosa *et al.*, "Scikit-learn: Machine learning in Python," *J. Mach. Learn. Res.*, vol. 12, pp. 2825-2830, 2011.
