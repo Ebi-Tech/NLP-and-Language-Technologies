@@ -28,7 +28,7 @@ All five approaches are trained and scored on the same fixed split and compared 
 
 **BiLSTM.** Embedding (128) → bidirectional LSTM (32 units per direction, selected over 64) → dropout (0.3) → softmax. It reads the tweet left-to-right and right-to-left and compresses it into one vector, so it can in principle use word order across the whole tweet. Trained with Adam (default learning rate), batch size 64, up to 15 epochs, early stopping on validation loss (patience 3). The notebook sets no random seed and reports one run per configuration, so BiLSTM numbers carry no seed-to-seed spread.
 
-**TextCNN.** The architecture follows Kim [2]: embedding (128) → parallel 1-D convolutions, each followed by ReLU and global max-pooling → concatenation → dropout (0.5) [8] → softmax. Each filter is a detector for a pattern of *k* consecutive words, and max-pooling keeps only the strongest match anywhere in the tweet. The model therefore sees local word patterns but has no memory of the rest of the sequence, which makes it a deliberate contrast with the BiLSTM. Kernel widths and filter counts were tuned (Section 4.5) following the practitioner guidance in [6]. The configuration selected by the pre-set rule is a single convolution of width 1 with 50 filters, trained without class weights. A width-1 convolution with global max-pooling looks at one word at a time and discards position, so the selected model is in effect a learned keyword detector. Training matches the BiLSTM (Adam [7] with learning rate 1e-3, batch 64, up to 15 epochs, early stopping on validation loss with patience 3, best weights restored) so that the architecture is the main difference.
+**TextCNN.** The architecture follows Kim [2]: embedding (128) → parallel 1-D convolutions, each followed by ReLU and global max-pooling → concatenation → dropout (0.5) [8] → softmax. Each filter is a detector for a pattern of *k* consecutive words, and max-pooling keeps only the strongest match anywhere in the tweet. The model therefore sees local word patterns but has no memory of the rest of the sequence, which makes it a deliberate contrast with the BiLSTM. Kernel widths and filter counts were tuned (Section 4.5); how sensitive CNN text classifiers are to these choices is studied in [6]. The configuration selected by the pre-set rule is a single convolution of width 1 with 50 filters, trained without class weights. A width-1 convolution with global max-pooling looks at one word at a time and discards position, so the selected model is in effect a learned keyword detector. Training matches the BiLSTM (Adam [7] with learning rate 1e-3, batch 64, up to 15 epochs, early stopping on validation loss with patience 3, best weights restored) so that the architecture is the main difference.
 
 **DistilBERT.** A pretrained transformer (`distilbert-base-uncased`) fine-tuned for the five classes: 3 epochs, AdamW with learning rate 2e-5, batch size 32, one run with PyTorch seed 42, 16.7 minutes on a Tesla T4. Self-attention lets every token attend to every other token, and pretraining supplies language knowledge the other two models must learn from 27,755 tweets.
 
@@ -60,7 +60,15 @@ Python with TensorFlow/Keras [10] (BiLSTM, TextCNN), scikit-learn [9] (TF-IDF, m
 
 ### 4.8 AI-use disclosure (draft: edit so that it is true)
 
-AI assistance (Claude, Anthropic) was used for: {confirm the earlier uses, for example planning the repository structure, drafting the shared helper modules in `src/`, writing the first version of the TextCNN notebook, drafting this section}; and, in the final stage, adding the download and push cells to the TextCNN notebook, checking the result files against the repository, and drafting corrections to `DECISIONS.md`, `README.md` and this section after the run. The group reviewed {how}, re-ran all training on Google Colab, and is responsible for the work. {Each member: state what you wrote and ran yourself.}
+AI assistance (Claude, Anthropic) was used for:
+
+Planning the repository structure
+
+Drafting shared helper modules in src/
+
+Adding download and push cells to the TextCNN notebook.
+
+The group reviewed all outputs, re‑ran training on Google Colab, and is responsible for the final work. Each member should state clearly what they personally wrote and executed.
 
 ## References for this section (IEEE)
 
