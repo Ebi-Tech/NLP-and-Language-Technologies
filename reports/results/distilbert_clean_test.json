@@ -1,0 +1,96 @@
+{
+  "model_name": "DistilBERT clean",
+  "split": "test",
+  "accuracy": 0.9993140113188133,
+  "macro_f1": 0.9952277464909592,
+  "weighted_f1": 0.9993126063597985,
+  "per_class_report": {
+    "economic_violence": {
+      "precision": 1.0,
+      "recall": 0.967741935483871,
+      "f1-score": 0.9836065573770492,
+      "support": 31.0
+    },
+    "emotional_violence": {
+      "precision": 1.0,
+      "recall": 0.9894736842105263,
+      "f1-score": 0.9947089947089947,
+      "support": 95.0
+    },
+    "harmful_traditional_practice": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 28.0
+    },
+    "physical_violence": {
+      "precision": 0.996268656716418,
+      "recall": 1.0,
+      "f1-score": 0.9981308411214954,
+      "support": 801.0
+    },
+    "sexual_violence": {
+      "precision": 0.9997948717948718,
+      "recall": 0.9995898277276456,
+      "f1-score": 0.9996923392472568,
+      "support": 4876.0
+    },
+    "accuracy": 0.9993140113188133,
+    "macro avg": {
+      "precision": 0.9992127057022578,
+      "recall": 0.9913610894844085,
+      "f1-score": 0.9952277464909592,
+      "support": 5831.0
+    },
+    "weighted avg": {
+      "precision": 0.9993158958843501,
+      "recall": 0.9993140113188133,
+      "f1-score": 0.9993126063597985,
+      "support": 5831.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      30,
+      0,
+      0,
+      1,
+      0
+    ],
+    [
+      0,
+      94,
+      0,
+      0,
+      1
+    ],
+    [
+      0,
+      0,
+      28,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      801,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      2,
+      4874
+    ]
+  ],
+  "label_order": [
+    "economic_violence",
+    "emotional_violence",
+    "harmful_traditional_practice",
+    "physical_violence",
+    "sexual_violence"
+  ]
+}
