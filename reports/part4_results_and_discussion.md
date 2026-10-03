@@ -34,7 +34,7 @@ Part 1 reported a maximum of 68 whole words, so splitting words into pieces make
 about half again as long. The 70 step limit used by the BiLSTM and TextCNN would have cut off more
 than 10% of tweets here. A limit of 128 tokens fits every tweet in the sample with nothing cut off.
 
-Training used AdamW [7] with a learning rate of 2e-5, batch size 32, three epochs and PyTorch seed
+Training used AdamW [22] with a learning rate of 2e-5, batch size 32, three epochs and PyTorch seed
 42. It took 15.4 minutes on a Tesla T4 GPU (`distilbert_run_info.json`).
 
 ### 5.2 The class weight experiment
@@ -113,8 +113,7 @@ on `harmful_traditional_practice`, 0.995 on `emotional_violence` and 0.984 on `e
 (`distilbert_test.json`).
 
 The lowest score is on `economic_violence`, and it comes from one wrong tweet out of 32. Recall is
-0.969 and precision is 1.000. A per class F1 built on 32 examples moves by about 0.03 for every
-single tweet, so the order of the rare classes inside any one model is not a stable number and
+0.969 and precision is 1.000. A per class F1 built on 32 examples moves by about 0.02 for every single tweet, so the order of the rare classes inside any one model is not a stable number and
 should not be read as one.
 
 All four confusion matrices are in `reports/figures/comparison_confusion_matrices.png`, and the
@@ -130,7 +129,7 @@ Masking swaps the ten strongest words for each class, picked on the training spl
 up placeholder word. Random masking swaps the same number of randomly chosen words in the same
 tweets. That one is the control, and it is the important one: it shows how much of the drop is just
 from damaging the text rather than from losing those particular words. Shuffling scrambles the word
-order inside each tweet with seed 42. Masking changes 99.9% of test tweets and swaps 2.2 words on
+order inside each tweet with seed 42. Masking changes between 99.8% and 99.9% of test tweets, depending on the text each model reads, and swaps 2.2 words on
 average.
 
 | Model | Unchanged | Keyword masked | Random masked | Shuffled |
@@ -295,15 +294,18 @@ of the four that is not explained by several categories being in the text.
 consensual spanking between adults, and says so clearly. Whether this tweet shows gender based
 violence at all is doubtful, and the prediction just follows the physical words in it.
 
-So three of the four errors are tweets that describe more than one category, and a fourth looks
-mislabelled. What limits this model is not its ability to represent the text. It is a one label per
-tweet scheme applied to posts that often report several kinds of violence together. The same thing
-explains the three TextCNN errors, two of which are the same tweets.
+So two of the four errors are tweets that describe more than one category, one is a single-category
+tweet that the model misreads, and one describes consensual spanking, which is doubtful as an
+example of violence. A one label per tweet scheme cannot represent the first two. The three TextCNN
+errors include two of the same tweets, and a third that asks about sexual harassment policies and is
+labelled emotional violence.
 
 One more thing about these four errors matters for any real use. The model gives the wrong class
 between 0.981 and 0.999, and never gives the right class more than 0.018. It is not unsure where it
-is wrong. That means no confidence cutoff would send these cases to a human while leaving the
-correct answers alone. Calibration was not tested in this study.
+is wrong. A confidence cutoff that catches all four errors would also flag 3.0% of its correct
+predictions (177 of 5,944), and reviewing the 50 least confident tweets would catch only 1 of the 4.
+For the TextCNN the same kind of cutoff flags only 0.4% of its correct predictions. Calibration was
+not tested in this study.
 
 ### 7.2 Errors across the models
 
@@ -342,8 +344,7 @@ specific claim than just saying it depends on keywords.
 ## 8. Limitations
 
 Everything here rests on one fixed split with the test set scored once. The two smallest classes
-have 28 and 32 test tweets, so one wrong answer moves a per class F1 by about 0.03 and macro F1 by
-about 0.006. First and second place are separated by three errors against four, which is well
+have 28 and 32 test tweets, so one wrong answer moves a per class F1 by about 0.02 and macro F1 by about 0.004. First and second place are separated by three errors against four, which is well
 inside that. No confidence intervals or significance tests were run. The order of TextCNN and
 DistilBERT should not be treated as settled.
 
@@ -367,7 +368,7 @@ DistilBERT splits it into word pieces and the TF-IDF model ignores it, so the ma
 strictly like for like.
 
 The labels themselves are a limit, and the error analysis ran straight into it. The scheme gives one
-category per tweet to posts that often describe several, and at least one test tweet looks like it
+category per tweet to posts that can describe several, and at least one test tweet looks like it
 does not describe violence at all. There is no inter annotator agreement figure for this dataset,
 and `Test.csv` has no labels, so there is no outside set to check whether these scores hold up.
 Validation is also used up for the selected DistilBERT setup, which means tuning on validation has
@@ -381,9 +382,9 @@ other models.
 
 ## 9. Future Work
 
-The clearest next step comes from the error analysis and not from the scores. Three of the four
-remaining errors are tweets describing more than one category, so this task really wants to be
-multi label. Evaluating against multi label annotations would measure something the current setup
+The clearest next step comes from the error analysis and not from the scores. Two of the five tweets that the two best models get wrong describe more than one category, which a
+single label per tweet cannot represent, so a multi label version of the task could be worth
+testing. Evaluating against multi label annotations would measure something the current setup
 cannot.
 
 The stress tests separate the models where the test metric does not, so they should be part of
@@ -403,7 +404,7 @@ from what the architecture gives, which this design cannot do as it is.
 
 This list continues the numbering used in Part 3. Entries [2] and [7] are already in that list and
 are repeated here only so the citation can be identified. The numbering across Part 1, Part 3 and
-Part 4 has to be merged into one list before submission. Entries [12] to [21] were checked against
+Part 4 has to be merged into one list before submission. Entries [12] to [22] were checked against
 their publication records.
 
 [2] Y. Kim, "Convolutional neural networks for sentence classification," in *Proc. 2014 Conf.
@@ -449,3 +450,5 @@ Computational Linguistics (ACL)*, Florence, Italy, 2019, pp. 3428-3448.
 [21] T. Niven and H.-Y. Kao, "Probing neural network comprehension of natural language arguments,"
 in *Proc. 57th Annu. Meeting of the Assoc. for Computational Linguistics (ACL)*, Florence, Italy,
 2019, pp. 4658-4664.
+
+[22] I. Loshchilov and F. Hutter, "Decoupled weight decay regularization," in *Proc. 7th Int. Conf. Learning Representations (ICLR)*, 2019, arXiv:1711.05101.
