@@ -35,7 +35,7 @@ about half again as long. The 70 step limit used by the BiLSTM and TextCNN would
 than 10% of tweets here. A limit of 128 tokens fits every tweet in the sample with nothing cut off.
 
 Training used AdamW [7] with a learning rate of 2e-5, batch size 32, three epochs and PyTorch seed
-42. It took 16.7 minutes on a Tesla T4 GPU (`distilbert_run_info.json`).
+42. It took 15.4 minutes on a Tesla T4 GPU (`distilbert_run_info.json`).
 
 ### 5.2 The class weight experiment
 
@@ -136,7 +136,7 @@ average.
 
 | Model | Unchanged | Keyword masked | Random masked | Shuffled |
 |---|---|---|---|---|
-| TextCNN | 0.9978 | 0.3999 | not tested | 0.9978 |
+| TextCNN | 0.9978 | 0.3999 | 0.8914 | 0.9978 |
 | DistilBERT | 0.9954 | 0.2463 | 0.9207 | 0.9857 |
 | TF-IDF and logistic regression | 0.9813 | 0.2485 | 0.9351 | 0.9777 |
 | BiLSTM | 0.9792 | not tested | not tested | not tested |
@@ -159,6 +159,11 @@ The control is what makes this mean something. Masking the same number of random
 roughly fifty specific words and not from the text being damaged. The TF-IDF baseline behaves
 almost the same way, falling to 0.2485 masked and 0.9351 on the control. A pretrained transformer
 and a bag of words model lean on the same vocabulary to about the same degree.
+
+The TextCNN sits in the same place, just not quite as far. It falls to 0.3999 masked against 0.8914
+on the control, so about 82% of its drop comes from the keywords. The same sum gives 90% for
+DistilBERT and 94% for the TF-IDF baseline. All three lean on the same small vocabulary, and the
+TextCNN leans on it a little less than the other two.
 
 Shuffling only means something for a model that can use word order in the first place. The TextCNN
 that was selected is one width 1 convolution with global max pooling, which ignores position by
@@ -237,8 +242,8 @@ has not been done.
 
 Pretraining and subword tokenization did not win here. DistilBERT comes second to a much smaller
 model. It has about 66 million parameters against roughly 2.6 million for the selected TextCNN,
-nearly all of which sit in its embedding layer, and it needed 16.7 minutes of GPU training against
-19 to 25 seconds per TextCNN run (`experiments_textcnn.csv`).
+nearly all of which sit in its embedding layer, and it needed 15.4 minutes of GPU training against
+21 to 25 seconds per TextCNN run (`experiments_textcnn.csv`).
 
 That is not because the transformer is weaker. It is because the task gives it nothing to be
 stronger at. The ceiling here is set by how consistently the tweets are labelled, and that ceiling
@@ -336,9 +341,7 @@ transformer and the two models trained from scratch mixes up pretraining with ar
 
 The stress tests show keyword dependence but do not fully describe it. They use one placeholder
 word, one way of picking keywords with ten per class, one random masking draw and one shuffle seed.
-The control and the shuffle test were not run for the BiLSTM, and the control was not run for the
-TextCNN, so two cells in Section 5.5 are empty and the TextCNN masking result cannot yet be told
-apart from plain text damage.
+None of the three has been run for the BiLSTM, so that whole row in Section 5.5 is still empty.
 
 The labels themselves are a limit, and the error analysis ran straight into it. The scheme gives one
 category per tweet to posts that often describe several, and at least one test tweet looks like it
