@@ -47,7 +47,7 @@ reference/
   StarterNotebook.ipynb          organizer-provided starter notebook (background only)
 ```
 
-The `reference/` folder holds background material from the competition organizers, like the original starter notebook, kept separate from the actual dataset since it's not part of the pipeline.
+The `reference/` folder holds background material from the competition organizers, like the original starter notebook. It sits apart from the dataset because it is not part of the pipeline.
 
 ## Setup
 
@@ -55,38 +55,66 @@ The `reference/` folder holds background material from the competition organizer
 pip install -r requirements.txt
 ```
 
-`requirements.txt` covers the data, baseline, BiLSTM and TextCNN notebooks. `04_distilbert.ipynb` installs `transformers` in its own first cell (PyTorch comes with Colab), so it is not listed there.
+`requirements.txt` covers the data, baseline, BiLSTM and TextCNN notebooks. `04_distilbert.ipynb` installs `transformers` in its own first cell, and PyTorch comes with Colab, so neither is listed there.
 
-**Google Colab.** Open a notebook from `notebooks/` in Colab and, for the neural models, choose Runtime, then Change runtime type, then a GPU. The first cell clones this repository, moves into it and adds it to the import path, so the notebook runs from a fresh runtime. TensorFlow is already installed on Colab and is not reinstalled. Run notebooks from the repository root, because `src/` imports use paths relative to it.
+### Google Colab
+
+Open a notebook from `notebooks/` in Colab. For the neural models, choose Runtime, then Change runtime type, then a GPU. The first cell clones this repository, moves into it and adds it to the import path, so the notebook runs from a fresh runtime. TensorFlow is already installed on Colab and is not reinstalled. Run notebooks from the repository root, because the imports from `src/` use paths relative to it.
 
 ## Reproducing Part 3 (TextCNN)
 
-1. Open `notebooks/04_textcnn.ipynb` in Colab and choose Runtime, then Change runtime type, then a GPU (the saved run used a Tesla T4).
-2. Run the cells in order. Training is 7 configurations with 3 seeds each (18 to 43 seconds per run on a T4), followed by one test evaluation and the stress tests.
-3. Every output file starts with `textcnn` (or is `experiments_textcnn.csv`, `confusion_matrix_textcnn.png`) and is written to `reports/results/` or `reports/figures/`.
-4. Step 11 of the notebook zips those files for download. Step 12 pushes them to the branch, using a GitHub token stored in Colab Secrets as `GITHUB_TOKEN`. Never paste the token into a cell.
+Open `notebooks/04_textcnn.ipynb` in Colab and switch the runtime to a GPU. The saved run used a Tesla T4. Run the cells in order. Training covers 7 configurations with 3 seeds each, at 18 to 43 seconds per run on a T4, followed by one test evaluation and the stress tests.
+
+Every output file starts with `textcnn`, or is `experiments_textcnn.csv` or `confusion_matrix_textcnn.png`, and is written to `reports/results/` or `reports/figures/`. Step 11 of the notebook zips those files for download. Step 12 pushes them to the branch, using a GitHub token stored in Colab Secrets as `GITHUB_TOKEN`. Never paste the token into a cell.
 
 ## Shared Artifacts
 
-Several files in this repo are shared infrastructure, not something to regenerate on your own branch. `splits/train_val_test_split.csv` holds the fixed stratified train, validation, and test split that all five models train and evaluate against, so results stay comparable across parts. `src/data_prep.py` handles text cleaning and label encoding the same way for everyone. `src/metrics.py` computes the evaluation metrics used to score every model and saves them to `reports/results/` in one consistent JSON format, so nobody ends up scoring their own model differently from the rest, and the five-model comparison in the Results stage can be built by reading those files directly rather than re-collecting numbers from each person. `src/leakage.py` defines the leak-free subset of each split (rows with no cleaned-text copy in train), so the duplicate check is run the same way for every model, and `src/save_preds.py` saves each model's per-tweet class probabilities on the test split in one shared format, which the five-model comparison reads.
+Several files in this repo are shared infrastructure, so do not regenerate them on your own branch.
+
+`splits/train_val_test_split.csv` holds the fixed stratified train, validation and test split that all five models train and evaluate against, which keeps results comparable across parts. `src/data_prep.py` handles text cleaning and label encoding the same way for everyone.
+
+`src/metrics.py` computes the metrics used to score every model and saves them to `reports/results/` in one JSON format. That way nobody scores their own model differently from the rest, and the five-model comparison can be built by reading those files directly instead of collecting numbers from each person.
+
+`src/leakage.py` defines the leak-free subset of each split, meaning the rows with no cleaned-text copy in train, so the duplicate check runs the same way for every model. `src/save_preds.py` saves each model's per-tweet class probabilities on the test split in one shared format, and the five-model comparison reads those files.
 
 ## Conventions Every Model Follows
 
-1. **Same data.** Use `splits/train_val_test_split.csv`. The neural models load it through `src/neural_data.load_neural_data()`.
-2. **Tune on validation only. Use the test set once,** after every decision is made.
-3. **Several seeds.** Run each tuning configuration with at least 2 seeds (3 preferred) and report mean and standard deviation. One run cannot separate differences of 0.005 macro-F1 when the rare classes have 28 to 33 validation tweets.
-4. **Report two test scores:** the full test set and the *clean* subset (tweets whose exact text is not in the training set). The clean subset is the headline.
-5. **Result files are per model and live in `reports/results/`.** Do not edit another person's file or append to a file several people write to, because that causes merge conflicts. Each model saves:
-   - `<model>_test.json` and `<model>_clean_test.json` with `src/metrics.save_metrics`
-   - `preds_<model>_test.csv` with `src/save_preds.save_preds`
-   - `experiments_<model>.csv` with `src/experiment_log.log_experiment`
-   - `<model>_comparison_row.csv` with `src/results_table.make_comparison_row`
-   - `<model>_masked_test.json` and `<model>_shuffled_test.json` from the stress tests in `src/robustness.py` (full test set, shuffle seed 42)
+### Data and splits
 
-   The combined `model_comparison.csv` is built from these by Part 4.
-6. **Record decisions** in `DECISIONS.md`.
-7. **Read each stress test against the architecture.** Shuffling cannot change the output of a model that ignores word order by construction (for example the final TextCNN with width-1 kernels, `DECISIONS.md` #25), so that result says nothing about the dataset.
+Use `splits/train_val_test_split.csv`. The neural models load it through `src/neural_data.load_neural_data()`.
+
+### Tuning and testing
+
+Tune on validation only, and use the test set once, after every decision is made. Run each tuning configuration with at least 2 seeds (3 preferred) and report the mean and standard deviation. One run cannot separate differences of 0.005 macro-F1 when the rare classes have 28 to 33 validation tweets.
+
+Report two test scores: the full test set and the *clean* subset, which holds the tweets whose exact text is not in the training set. The clean subset is the headline.
+
+### Result files
+
+Result files are per model and live in `reports/results/`. Do not edit another person's file or append to a file that several people write to, because that causes merge conflicts. Each model saves these files:
+
+* `<model>_test.json` and `<model>_clean_test.json` with `src/metrics.save_metrics`
+* `preds_<model>_test.csv` with `src/save_preds.save_preds`
+* `experiments_<model>.csv` with `src/experiment_log.log_experiment`
+* `<model>_comparison_row.csv` with `src/results_table.make_comparison_row`
+* `<model>_masked_test.json` and `<model>_shuffled_test.json` from the stress tests in `src/robustness.py` (full test set, shuffle seed 42)
+
+Part 4 builds the combined `model_comparison.csv` from these files.
+
+### Decisions and stress tests
+
+Record any decision that affects more than one person in `DECISIONS.md`.
+
+Read each stress test against the architecture. Shuffling cannot change the output of a model that ignores word order by construction, such as the final TextCNN with width-1 kernels (`DECISIONS.md` #25), so that result says nothing about the dataset.
+
+## Writing Style
+
+This applies to the README, report sections, notebook text and code comments.
+
+Write in plain paragraphs and keep lists short and flat. Use a list only for items that really are a list, such as prerequisites or file names, and let headers do the structural work. Never change a code block or terminal command when you edit the prose around it.
+
+Keep the tone direct and practical, the way you would explain something to a teammate. Skip filler and transition phrases, and say what a step does and why. Do not use em dashes or en dashes, and make sure no broken characters end up in the text.
 
 ## Branch Workflow
 
-Part 1, covering baselines and EDA, gets pushed straight to `main` since it's the foundation everything else depends on. Parts 2 through 4 each work on their own branch off `main` and get reviewed before merging in.
+Part 1, covering baselines and EDA, gets pushed straight to `main` since it is the foundation everything else depends on. Parts 2 through 4 each work on their own branch off `main` and get reviewed before merging in.
