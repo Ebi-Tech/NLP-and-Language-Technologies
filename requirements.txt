@@ -7,3 +7,8 @@ nltk
 
 # Neural models (BiLSTM, TextCNN). Google Colab already ships TensorFlow: do not reinstall it there.
 tensorflow>=2.16
+
+# DistilBERT (05_distilbert.ipynb). Google Colab already ships PyTorch and the notebook installs transformers itself,
+# so these two lines matter for local runs.
+torch
+transformers

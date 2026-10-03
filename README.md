@@ -34,13 +34,13 @@ notebooks/
   02_baseline_models.ipynb             baseline model training and evaluation
   03_bidirectional-lstm.ipynb          Part 2: BiLSTM
   04_textcnn.ipynb                     Part 3: TextCNN
-  04_distilbert.ipynb                  Part 4: DistilBERT
-  comparison.ipynb                     Part 4: cross-model comparison, reads reports/results/preds_*_test.csv
+  05_distilbert.ipynb                  Part 4: DistilBERT
+  06_comparison.ipynb                  Part 4: cross-model comparison, reads reports/results/preds_*_test.csv
 reports/
   part1_data_understanding_and_preprocessing.md   written report section for Part 1
-  Bidirectional_LSTM.md          written report section for Part 2 (BiLSTM)
-  part3_methodology.md           draft of the Methodology section (Part 3)
-  methodology_template_for_team.md   template sent to each model owner for the Methodology section
+  part2_bilstm_model.md          written report section for Part 2 (BiLSTM)
+  part3_methodology.md           written Methodology section (Part 3)
+  part4_results_and_discussion.md   written Results, Discussion and Error Analysis sections (Part 4)
   figures/                       all chart and confusion matrix images
   results/                       every result file, one set per model (see Conventions below)
 reference/
@@ -55,7 +55,7 @@ The `reference/` folder holds background material from the competition organizer
 pip install -r requirements.txt
 ```
 
-`requirements.txt` covers the data, baseline, BiLSTM and TextCNN notebooks. `04_distilbert.ipynb` installs `transformers` in its own first cell, and PyTorch comes with Colab, so neither is listed there.
+`requirements.txt` covers the data, baseline, BiLSTM and TextCNN notebooks. `05_distilbert.ipynb` installs `transformers` in its own first cell, and PyTorch comes with Colab, so neither is listed there.
 
 ### Google Colab
 
@@ -99,7 +99,7 @@ Result files are per model and live in `reports/results/`. Do not edit another p
 * `<model>_comparison_row.csv` with `src/results_table.make_comparison_row`
 * `<model>_masked_test.json` and `<model>_shuffled_test.json` from the stress tests in `src/robustness.py` (full test set, shuffle seed 42)
 
-Part 4 builds the combined `model_comparison.csv` from these files.
+Part 4 builds the combined `model_comparison_all.csv` from these files, in `06_comparison.ipynb`.
 
 ### Decisions and stress tests
 

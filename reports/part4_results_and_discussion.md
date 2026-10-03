@@ -68,7 +68,7 @@ number has a spread to compare against. Learning curves for both are in
 
 The test split was scored once, after every configuration decision was already made. All five
 models were then rescored by the same function from their saved predictions, so no model is scored
-by different code (`comparison.ipynb`, which writes `model_comparison_all.csv`). The clean subset
+by different code (`06_comparison.ipynb`, which writes `model_comparison_all.csv`). The clean subset
 is the 5,831 test tweets whose cleaned text does not appear anywhere in training, defined in
 `src/leakage.py`.
 
@@ -77,20 +77,19 @@ is the 5,831 test tweets whose cleaned text does not appear anywhere in training
 | TextCNN | 0.9995 | 0.9978 | 0.9977 | 3 | 0.99999 |
 | DistilBERT | 0.9993 | 0.9954 | 0.9952 | 4 | 0.99985 |
 | TF-IDF and logistic regression | 0.9970 | 0.9813 | 0.9808 | 18 | 0.99997 |
-| BiLSTM | 0.9963 | 0.9792 | 0.9787 | 22 | 0.99975 |
+| BiLSTM | 0.9960 | 0.9693 | 0.9685 | 24 | 0.99895 |
 | Majority class | 0.8235 | 0.1806 | 0.1822 | 1,050 | 0.5 |
 
-Accuracy and macro F1 come from `model_comparison_all.csv` and macro AUC from `roc_auc_all.csv`.
-The clean columns come from each model's `_clean_test.json` file where it exists
-(`distilbert_clean_test.json`, `textcnn_clean_test.json`, `tfidf_logreg_clean_test.json`) and are
-recomputed from the prediction files otherwise. The BiLSTM row is computed from
-`preds_bilstm_test.csv`. Part 2 reports a macro F1 of 0.9723 for the same model from a different
-run, and that still has to be sorted out before this report is handed in.
+Accuracy and macro F1 come from `model_comparison_all.csv` and macro AUC from `roc_auc_all.csv`. The
+clean columns come from each model's `_clean_test.json` file (`distilbert_clean_test.json`,
+`textcnn_clean_test.json`, `tfidf_logreg_clean_test.json` and `bilstm_clean_test.json`). The BiLSTM
+row is computed from `preds_bilstm_test.csv`, the saved output of the final seeded run described in
+Part 2, and it agrees with the numbers Part 2 reports.
 
 Three things come out of this table.
 
-Accuracy cannot tell the four trained models apart. They sit between 0.9963 and 0.9995. Macro AUC
-cannot either, since all four are above 0.9997. That is why `reports/figures/comparison_roc.png`
+Accuracy cannot tell the four trained models apart. They sit between 0.9960 and 0.9995. Macro AUC
+cannot either, since all four are above 0.998. That is why `reports/figures/comparison_roc.png`
 has a zoomed panel next to the full one, because at full scale the curves sit on top of each other.
 
 Macro F1 does tell them apart, but only just, and the gap rests on very few tweets. The difference
@@ -139,10 +138,9 @@ average.
 | TextCNN | 0.9978 | 0.3999 | 0.8914 | 0.9978 |
 | DistilBERT | 0.9954 | 0.2463 | 0.9207 | 0.9857 |
 | TF-IDF and logistic regression | 0.9813 | 0.2485 | 0.9351 | 0.9777 |
-| BiLSTM | 0.9792 | not tested | not tested | not tested |
+| BiLSTM | 0.9693 | 0.1993 | 0.7453 | 0.9295 |
 
-These are macro F1 scores from `stress_test_comparison.csv`. The empty cells are tests that have
-not been run, not tests that showed no effect.
+These are macro F1 scores from `stress_test_comparison.csv`.
 
 Masking takes away most of what every tested model had. DistilBERT drops from 0.9954 to 0.2463,
 which is a fall of 0.7491. Its accuracy under masking is 0.8294, and a model that always answers
@@ -165,11 +163,27 @@ on the control, so about 82% of its drop comes from the keywords. The same sum g
 DistilBERT and 94% for the TF-IDF baseline. All three lean on the same small vocabulary, and the
 TextCNN leans on it a little less than the other two.
 
+The BiLSTM behaves differently in two ways. It falls to 0.1993 masked, the lowest of the four, but
+its accuracy under masking is 0.0651, far below the 0.8235 of always answering `sexual_violence`,
+because 5,591 of the 5,948 masked tweets are called `emotional_violence` instead
+(`bilstm_masked_test.json`). It is also hurt most by the control, which leaves 0.7453, so only about
+71% of its masking drop comes from the keywords. Both effects fit a model that reads the placeholder
+as evidence in itself, since the Keras tokenizer maps it to the unknown-word token. In the training
+split `emotional_violence` has the highest share of unknown-word tokens of any class (2.26% of
+tokens against 1.25% to 1.94%, measured with `bilstm_tokenizer.pkl`), which is consistent with that
+explanation but does not prove it. The TextCNN uses the same tokenizer and does not show this
+pattern, since its masked predictions go to `sexual_violence`.
+
 Shuffling only means something for a model that can use word order in the first place. The TextCNN
 that was selected is one width 1 convolution with global max pooling, which ignores position by
 design, so its identical shuffled and unshuffled scores say something about the architecture and
 nothing about the data. That is decision 25 in the decision log. For DistilBERT the test is real,
 and scrambling every word costs 0.0097, from 0.9954 down to 0.9857.
+
+For the BiLSTM the test is real as well, and it costs more: macro F1 falls from 0.9693 to 0.9295,
+about 0.04, although accuracy only moves from 0.9960 to 0.9938. The loss sits in the smallest
+classes, where the F1 of `economic_violence` goes from 0.941 to 0.842 on 32 tweets, so a few tweets
+account for it.
 
 ## 6. Discussion
 
@@ -181,11 +195,11 @@ they do handle it, but not by acting sequential.
 Two results point the same way. The best model overall is the TextCNN in a setup that cannot see
 word order at all, since one width 1 kernel with global max pooling is really just a learned single
 word detector. And DistilBERT with the word order of every test tweet destroyed still scores
-0.9857, which beats the BiLSTM at 0.9792 and the TF-IDF baseline at 0.9813 with their text left
+0.9857, which beats the BiLSTM at 0.9693 and the TF-IDF baseline at 0.9813 with their text left
 alone. A transformer reading scrambled text does better than the model that was picked for this
-study specifically because it reads sequences in order. The 0.0097 that shuffling does cost
-DistilBERT is the only number in this study that isolates what word order is worth here, and it is
-small.
+study specifically because it reads sequences in order. The two numbers in this study that isolate
+what word order is worth are the 0.0097 that shuffling costs DistilBERT and the 0.04 it costs the
+BiLSTM. Both are small next to the 0.75 and 0.77 that keyword masking costs the same two models.
 
 This matches research on other tasks. Pham et al. found models keep most of their accuracy on most
 GLUE tasks when the words are shuffled at test time [16], and Sinha et al. found that pretraining
@@ -194,7 +208,9 @@ narrower version of the same thing. These five classes are set apart by which wo
 the order they show up in adds very little that any of these models picks up.
 
 Part 2 said the point of including a recurrent model was to test whether word order helps here, not
-to assume it does. Read against the numbers above, that test came back negative. That is a finding,
+to assume it does. Read against the numbers above, the answer is mostly negative. The BiLSTM does lose about 0.04
+macro F1 when its input is shuffled, so it uses order to some degree, but it still scores below
+the order-blind TF-IDF baseline and the width 1 TextCNN on the unshuffled text. That is a finding,
 not a failed experiment.
 
 ### 6.2 The high scores come from a separable vocabulary
@@ -216,14 +232,14 @@ traced back to spurious cues in the data [21]. This dataset has an unusually str
 kind, which Part 1 spotted in the baseline's feature weights before any neural model was trained.
 
 So the ranking in Section 5.3 should not be read as a ranking of language understanding. The four
-trained models are separated by between 3 and 22 errors out of 5,948, while all of them lose most
+trained models are separated by between 3 and 24 errors out of 5,948, while all of them lose most
 of their performance to the same change in the text. On this dataset the stress tests separate the
 models far more than the test scores do.
 
 ### 6.3 Class weights show up in the errors
 
 The two models trained with balanced class weights are the TF-IDF baseline and the BiLSTM. They
-make 18 and 22 errors, and 14 and 20 of those are tweets whose real class is `sexual_violence`
+make 18 and 24 errors, and 14 and 20 of those are tweets whose real class is `sexual_violence`
 being called something else. The two models trained without class weights, the TextCNN and
 DistilBERT, make 3 and 4 errors, and only 1 and 2 of those go that way.
 
@@ -265,8 +281,9 @@ them.
 
 **ID_1RXM1NG7.** Labelled `sexual_violence`, predicted `physical_violence` at 0.997. In one
 sentence it says a husband beats his wife, forces sex on her, and raped their daughter. Three
-categories at once. This is the only test tweet that all four trained models get wrong, and each
-one puts it in a class the text also describes.
+categories at once. This is one of two test tweets that three of the four trained models get wrong
+(the BiLSTM gets it right). Each of the three puts it in `physical_violence`, a class the text also
+describes.
 
 **ID_2PSQRJXD.** Labelled `economic_violence`, predicted `physical_violence` at 0.999. The tweet is
 about a woman whose husband was fired from his job over his private life. The words for the right
@@ -290,16 +307,19 @@ correct answers alone. Calibration was not tested in this study.
 
 ### 7.2 Errors across the models
 
-Across the four trained models, 39 different test tweets are wrong for at least one model, and only
-one is wrong for all four. So the error sets barely overlap. The models fail on different tweets
-even though they score within 0.019 macro F1 of each other. The biggest overlap is 4 shared errors
-between the TF-IDF baseline and the BiLSTM, which are the two models trained with class weights.
+Across the four trained models, 40 different test tweets are wrong for at least one model, 33 of
+them for exactly one, and none is wrong for all four. Two tweets are wrong for three models. So the
+error sets barely overlap. The models fail on different tweets even though they score within 0.028
+macro F1 of each other. The biggest overlap is 5 shared errors between the TF-IDF baseline and the
+BiLSTM, which are the two models trained with class weights.
 
-Two confusions account for most errors in every model. `sexual_violence` called
-`emotional_violence` is the single biggest cell for both the TF-IDF baseline at 7 tweets and the
-BiLSTM at 12, and `sexual_violence` called `physical_violence` is next. Both pairs are classes that
-share vocabulary and turn up together in the same post, which is the same cause as in the
-individual errors above.
+`sexual_violence` called `emotional_violence` is the single biggest cell for both the TF-IDF
+baseline at 7 tweets and the BiLSTM at 14. For the TF-IDF baseline the next cell is
+`sexual_violence` called `physical_violence` at 4, and for the BiLSTM it is `sexual_violence` called
+`economic_violence` at 3. The TextCNN and DistilBERT have only a few errors each, mostly
+`sexual_violence` called `physical_violence` and `emotional_violence` called `sexual_violence`.
+These are classes that share vocabulary and turn up together in the same post, which is the same
+cause as in the individual errors above.
 
 Part 1 flagged that `physical_violence` tweets are much shorter, 23.3 words on average against 34
 to 42 for the other classes, and said to check whether models were keying on length instead of
@@ -328,8 +348,9 @@ inside that. No confidence intervals or significance tests were run. The order o
 DistilBERT should not be treated as settled.
 
 Seeds are uneven across the project. The TextCNN configurations were each run with three seeds and
-are reported with standard deviations. DistilBERT is one seed and the BiLSTM sets no seed at all,
-so neither can be compared against a seed spread. For DistilBERT the class weight decision rests
+are reported with standard deviations. DistilBERT is one seed, and the BiLSTM test result is one
+seeded run (seed 42), so neither has a seed spread at test time. The BiLSTM's own three seed
+validation runs vary by a standard deviation of 0.004 to 0.009 macro F1 (`experiments_bilstm.csv`). For DistilBERT the class weight decision rests
 on one run each with a gap smaller than the project's own tie rule.
 
 This part did not experiment much. One hyperparameter decision was tested for DistilBERT. The
@@ -341,7 +362,9 @@ transformer and the two models trained from scratch mixes up pretraining with ar
 
 The stress tests show keyword dependence but do not fully describe it. They use one placeholder
 word, one way of picking keywords with ten per class, one random masking draw and one shuffle seed.
-None of the three has been run for the BiLSTM, so that whole row in Section 5.5 is still empty.
+Each model reads the placeholder differently: the Keras tokenizer maps it to its unknown-word token,
+DistilBERT splits it into word pieces and the TF-IDF model ignores it, so the masked scores are not
+strictly like for like.
 
 The labels themselves are a limit, and the error analysis ran straight into it. The scheme gives one
 category per tweet to posts that often describe several, and at least one test tweet looks like it
@@ -350,9 +373,11 @@ and `Test.csv` has no labels, so there is no outside set to check whether these 
 Validation is also used up for the selected DistilBERT setup, which means tuning on validation has
 no room left to tell anything apart at this level.
 
-Last, the BiLSTM numbers used in the comparison come from the saved prediction file and do not match
-the numbers Part 2 reports for the same model. That is unresolved as this is written, and the row is
-marked in Section 5.3.
+Last, the BiLSTM test set was scored more than once. Its first two unseeded runs scored macro F1 values of 0.9723 and 0.9657, and
+the model was then retrained with a fixed seed so that its weights and predictions could be saved
+and reproduced. The reported 0.9693 comes from that seeded model, and no configuration was chosen
+from test scores, but the statement that the test split is scored once holds strictly only for the
+other models.
 
 ## 9. Future Work
 
@@ -378,8 +403,8 @@ from what the architecture gives, which this design cannot do as it is.
 
 This list continues the numbering used in Part 3. Entries [2] and [7] are already in that list and
 are repeated here only so the citation can be identified. The numbering across Part 1, Part 3 and
-Part 4 has to be merged into one list before submission, and each entry should be checked against
-the source.
+Part 4 has to be merged into one list before submission. Entries [12] to [21] were checked against
+their publication records.
 
 [2] Y. Kim, "Convolutional neural networks for sentence classification," in *Proc. 2014 Conf.
 Empirical Methods in Natural Language Processing (EMNLP)*, Doha, Qatar, 2014, pp. 1746-1751.
@@ -399,9 +424,9 @@ for Computational Linguistics (NAACL-HLT)*, Minneapolis, MN, USA, 2019, pp. 4171
 Conf. Empirical Methods in Natural Language Processing: System Demonstrations*, 2020, pp. 38-45.
 
 [15] A. Paszke *et al.*, "PyTorch: An imperative style, high-performance deep learning library," in
-*Advances in Neural Information Processing Systems 32 (NeurIPS)*, 2019, pp. 8024-8035.
+*Advances in Neural Information Processing Systems 32 (NeurIPS)*, 2019.
 
-[16] T. M. Pham, T. Bui, L. Mai, and A. Nguyen, "Out of order: How important is the sequential order
+[16] T. Pham, T. Bui, L. Mai, and A. Nguyen, "Out of order: How important is the sequential order
 of words in a sentence in natural language understanding tasks?," in *Findings of the Assoc. for
 Computational Linguistics: ACL-IJCNLP 2021*, 2021, pp. 1145-1160.
 
@@ -410,7 +435,7 @@ and the distributional hypothesis: Order word matters pre-training for little," 
 Empirical Methods in Natural Language Processing (EMNLP)*, 2021, pp. 2888-2913.
 
 [18] R. Geirhos *et al.*, "Shortcut learning in deep neural networks," *Nature Machine
-Intelligence*, vol. 2, no. 11, pp. 665-673, Nov. 2020.
+Intelligence*, vol. 2, no. 11, pp. 665-673, Nov. 2020, doi: 10.1038/s42256-020-00257-z.
 
 [19] S. Gururangan, S. Swayamdipta, O. Levy, R. Schwartz, S. R. Bowman, and N. A. Smith,
 "Annotation artifacts in natural language inference data," in *Proc. 2018 Conf. North American
