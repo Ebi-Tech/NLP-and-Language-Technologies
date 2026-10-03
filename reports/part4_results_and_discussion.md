@@ -93,10 +93,10 @@ cannot either, since all four are above 0.998. That is why `reports/figures/comp
 has a zoomed panel next to the full one, because at full scale the curves sit on top of each other.
 
 Macro F1 does tell them apart, but only just, and the gap rests on very few tweets. The difference
-between first and second place is three errors against four.
+between first and second place is three errors against four. The rows are ordered by full-test macro F1, and the order is the same on the clean subset.
 
 The majority class baseline gets 82.35% accuracy with a macro F1 of 0.1806. That is the whole
-argument from Part 1 in one line, and it is why macro F1 is the headline metric here.
+argument from Part 1 in one line, and it is why macro F1 is the headline metric here, scored on the clean subset with the full-test column shown for comparison.
 
 The full test and clean test columns differ by less than 0.001 for every model, and the reason is
 sharper than just the overlap being small. Every error from all four trained models falls inside

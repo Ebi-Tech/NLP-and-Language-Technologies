@@ -87,7 +87,7 @@ Use `splits/train_val_test_split.csv`. The neural models load it through `src/ne
 
 Tune on validation only, and use the test set once, after every decision is made. Run each tuning configuration with at least 2 seeds (3 preferred) and report the mean and standard deviation. One run cannot separate differences of 0.005 macro-F1 when the rare classes have 28 to 33 validation tweets.
 
-Report two test scores: the full test set and the *clean* subset, which holds the tweets whose exact text is not in the training set. The clean subset is the headline.
+Report two test scores: the full test set and the *clean* subset, which holds the tweets whose exact text is not in the training set. The headline score is the macro F1 on the clean subset, and accuracy, which is the leaderboard metric, is reported alongside.
 
 ### Result files
 
