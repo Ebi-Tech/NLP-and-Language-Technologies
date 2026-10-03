@@ -42,7 +42,7 @@ All five approaches are trained and scored on the same fixed split and compared 
 
 | Stage | Question | Configurations | Hypothesis written in advance | Outcome (mean validation macro-F1 ± std) |
 |---|---|---|---|---|
-| A | How much word order does the classifier need? | Kernel widths `{1}`, `{2}`, `{3,4,5}`, `{3,4,5,6,7}`; 100 filters each | Width-1 kernels (single-word detectors) match wider kernels, because a bag-of-words model already reaches about 99.7% accuracy | Supported. 0.9821 ± 0.0044, 0.9801 ± 0.0054, 0.9823 ± 0.0046, 0.9849 ± 0.0033: all within 0.005, so the tie rule chose `{1}` |
+| A | How much word order does the classifier need? | Kernel widths `{1}`, `{2}`, `{3,4,5}`, `{3,4,5,6,7}`; 100 filters each | Width-1 kernels (single-word detectors) match wider kernels, because a bag-of-words model already reaches about 99.7% accuracy | Supported. 0.9821 ± 0.0044, 0.9801 ± 0.0054, 0.9807 ± 0.0052, 0.9849 ± 0.0033: all within 0.005, so the tie rule chose `{1}` |
 | B | Does capacity matter? | 50, 100, 200 filters, using Stage A's winning kernels | Little, above a small number | Supported. 0.9831 ± 0.0057, 0.9821 ± 0.0044, 0.9831 ± 0.0102: tied, so 50 filters was chosen |
 | C | Do class weights matter? | Stage B's winner with and without `balanced` weights | Weights raise macro-F1 through rare-class recall | Rejected. Unweighted 0.9951 ± 0.0042 against weighted 0.9831 ± 0.0057, a gap of 0.012, above both the tie tolerance and the seed spread |
 
