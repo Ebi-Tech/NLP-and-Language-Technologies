@@ -6,7 +6,7 @@ This is a group project comparing five sequential and classical modelling approa
 
 **Content warning.** The dataset contains real, first-person descriptions of gender-based violence, including graphic descriptions of sexual abuse. Read with that in mind before opening the raw data files.
 
-**Data attribution.** The dataset is provided by Zindi under a CC-BY 1.0 license, which permits this kind of research and educational use and redistribution. Source: [Gender-Based Violence Tweet Classification Challenge, Zindi](https://zindi.africa/competitions/gender-based-violence-tweet-classification-challenge).
+**Data attribution.** The dataset is provided by Zindi under a CC-BY 1.0 license, which permits this kind of research and educational use and redistribution. Source: [Gender-Based Violence Tweet Classification Challenge, Zindi](https://zindi.world/competitions/gender-based-violence-tweet-classification-challenge).
 
 ## Repo Structure
 
@@ -55,7 +55,7 @@ The `reference/` folder holds background material from the competition organizer
 pip install -r requirements.txt
 ```
 
-`requirements.txt` covers the data, baseline, BiLSTM and TextCNN notebooks. `05_distilbert.ipynb` installs `transformers` in its own first cell, and PyTorch comes with Colab, so neither is listed there.
+`requirements.txt` covers every notebook, including `torch` and `transformers` for `05_distilbert.ipynb` on a local machine. On Colab, PyTorch and TensorFlow are already installed, and `05_distilbert.ipynb` installs `transformers` in its own first cell.
 
 ### Google Colab
 
@@ -63,9 +63,27 @@ Open a notebook from `notebooks/` in Colab. For the neural models, choose Runtim
 
 ## Reproducing Part 3 (TextCNN)
 
-Open `notebooks/04_textcnn.ipynb` in Colab and switch the runtime to a GPU. The saved run used a Tesla T4. Run the cells in order. Training covers 7 configurations with 3 seeds each, at 18 to 43 seconds per run on a T4, followed by one test evaluation and the stress tests.
+Open `notebooks/04_textcnn.ipynb` in Colab and switch the runtime to a GPU. The saved run used a Tesla T4. Run the cells in order. Training covers 7 configurations with 3 seeds each, at 20 to 39 seconds on average per configuration on a T4, followed by one test evaluation and the stress tests.
 
 Every output file starts with `textcnn`, or is `experiments_textcnn.csv` or `confusion_matrix_textcnn.png`, and is written to `reports/results/` or `reports/figures/`. Step 11 of the notebook zips those files for download. Step 12 pushes them to the branch, using a GitHub token stored in Colab Secrets as `GITHUB_TOKEN`. Never paste the token into a cell.
+
+## Reproducing Parts 2 and 4
+
+`notebooks/03_bidirectional-lstm.ipynb` (BiLSTM) compares 32 and 64 units over 3 seeds each, then retrains the selected 32-unit model with seed 42 and saves it. It was run on a Kaggle GPU whose model was not recorded. `notebooks/05_distilbert.ipynb` fine-tunes DistilBERT on a Colab Tesla T4 with and without class weights, and the selected run took 15.4 minutes. `notebooks/06_comparison.ipynb` reads the saved prediction files and rebuilds the comparison tables and figures without retraining anything.
+
+## Results at a Glance
+
+Macro F1 on the 5,831 test tweets with no copy in the training set, the headline metric:
+
+| Model | Clean macro F1 | Errors in 5,948 test tweets |
+|---|---|---|
+| TextCNN | 0.9977 | 3 |
+| DistilBERT | 0.9952 | 4 |
+| TF-IDF + logistic regression | 0.9808 | 18 |
+| BiLSTM | 0.9685 | 24 |
+| Majority class | 0.1822 | 1,050 |
+
+Masking the fifty strongest class keywords drops every trained model to a macro F1 of about 0.20 to 0.40, so the scores depend heavily on a small set of trigger words. The full tables, tuning experiments and error analysis are in the four files under `reports/`.
 
 ## Shared Artifacts
 
@@ -97,9 +115,10 @@ Result files are per model and live in `reports/results/`. Do not edit another p
 * `preds_<model>_test.csv` with `src/save_preds.save_preds`
 * `experiments_<model>.csv` with `src/experiment_log.log_experiment`
 * `<model>_comparison_row.csv` with `src/results_table.make_comparison_row`
-* `<model>_masked_test.json` and `<model>_shuffled_test.json` from the stress tests in `src/robustness.py` (full test set, shuffle seed 42)
+* `<model>_masked_test.json`, `<model>_random_masked_test.json` and `<model>_shuffled_test.json` from the stress tests in `src/robustness.py` (full test set, seed 42 for the random and shuffle tests)
+* `bilstm_model.keras` and `bilstm_tokenizer.pkl`, the saved final BiLSTM, from which its predictions and stress tests can be reproduced
 
-Part 4 builds the combined `model_comparison_all.csv` from these files, in `06_comparison.ipynb`.
+Part 4 builds `model_comparison_all.csv`, `roc_auc_all.csv` and `stress_test_comparison.csv` from these files, in `06_comparison.ipynb`, together with `comparison_confusion_matrices.png`, `comparison_roc.png` and `comparison_stress_tests.png`.
 
 ### Decisions and stress tests
 
@@ -114,7 +133,3 @@ This applies to the README, report sections, notebook text and code comments.
 Write in plain paragraphs and keep lists short and flat. Use a list only for items that really are a list, such as prerequisites or file names, and let headers do the structural work. Never change a code block or terminal command when you edit the prose around it.
 
 Keep the tone direct and practical, the way you would explain something to a teammate. Skip filler and transition phrases, and say what a step does and why. Do not use em dashes or en dashes, and make sure no broken characters end up in the text.
-
-## Branch Workflow
-
-Part 1, covering baselines and EDA, gets pushed straight to `main` since it is the foundation everything else depends on. Parts 2 through 4 each work on their own branch off `main` and get reviewed before merging in.
